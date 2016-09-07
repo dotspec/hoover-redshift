@@ -1,10 +1,19 @@
 # Vacuums Redshift ETL Tables to increase performance.
 # Author: Darren Gordon <darren@spec907.net> 12-2-2015
+# Updated by: Courtney Cotton <cotton@cottoncourtney.com> 12-5-2015
 
 require 'aws-sdk'
+require 'dogapi'
 require 'json'
 require 'pg'
 require 'rubygems'
+
+# API Connections
+api_key='YERAPIKEYHERE'
+app_key='YERAPIKEYHERE'
+
+dog = Dogapi::Client.new(api_key, app_key)
+redshift = Aws::Redshift::Client.new(region: 'us-west-2')
 
 # Function to execute vacuum on table.
 def vacuum_table(conn,table)
@@ -42,9 +51,25 @@ resp = redshift.create_cluster_snapshot({
 
 # Once our connection is open, exec the following and give us the error if one occurs
 # What needs to be vacuumed
-results = conn.exec("SELECT schema,\"table\",unsorted FROM SVV_TABLE_INFO where unsorted > 90")
+begin
+  results = conn.exec("SELECT schema,\"table\",unsorted FROM SVV_TABLE_INFO where unsorted > 90")
+  if results.values.empty?
+    title = "Redshift Cluster: #{db_name} has 0 tables to update."
+    text  = "The Redshift Cluster: #{db_name} is properly sorted. No action was needed."
+    tags  = ["#{db_name}", "#{db_endpoint}"]
+    dog.emit_event(Dogapi::Event.new(text, :msg_title => title, :priority => 'low', :tags => tags))
+    abort
+  end
+  rescue PG::Error => err
+    puts err
+end
 
 results.each do |row|
   table = row['schema'] + '.' + row['table']
   vacuum_table(conn,table)
 end
+
+title = "Redshift Cluster: #{db_name} sorted tables."
+text  = "The Redshift Cluster: #{db_name} underwent sorting."
+tags  = ["#{db_name}", "#{db_endpoint}"]
+dog.emit_event(Dogapi::Event.new(text, :msg_title => title, :priority => 'normal', :tags => tags))
