@@ -12,6 +12,12 @@ require 'rubygems'
 api_key='YERAPIKEYHERE'
 app_key='YERAPIKEYHERE'
 
+# Variables for PG + Redshift connections.
+db_endpoint = "AMAZON_URL.redshift.amazonaws.com"
+db_name = "TABLE_NAME"
+db_user = "USER_NAME"
+db_pwd  = "DB_PASS"
+
 dog = Dogapi::Client.new(api_key, app_key)
 redshift = Aws::Redshift::Client.new(region: 'us-west-2')
 
@@ -26,12 +32,6 @@ def create_timestamp()
     t = Time.now.strftime("%Y-%m-%d-%Y-%H-%M")
     return t
 end
-
-# Variables for PG + Redshift connections.
-db_endpoint = "AMAZON_URL.redshift.amazonaws.com"
-db_name = "TABLE_NAME"
-db_user = "USER_NAME"
-db_pwd  = "DB_PASS"
 
 # Create Postgres connection
 conn = PG::Connection.new("#{db_endpoint}",
