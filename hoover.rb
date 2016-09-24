@@ -17,6 +17,7 @@ db_endpoint = "AMAZON_URL.redshift.amazonaws.com"
 db_name = "TABLE_NAME"
 db_user = "USER_NAME"
 db_pwd  = "DB_PASS"
+threshold = "75"
 
 dog = Dogapi::Client.new(api_key, app_key)
 redshift = Aws::Redshift::Client.new(region: 'us-west-2')
@@ -52,7 +53,7 @@ resp = redshift.create_cluster_snapshot({
 # Once our connection is open, exec the following and give us the error if one occurs
 # What needs to be vacuumed
 begin
-  results = conn.exec("SELECT schema,\"table\",unsorted FROM SVV_TABLE_INFO where unsorted > 90")
+  results = conn.exec("SELECT schema,\"table\",unsorted FROM SVV_TABLE_INFO where unsorted > #{threshold}")
   if results.values.empty?
     title = "Redshift Cluster: #{db_name} has 0 tables to update."
     text  = "The Redshift Cluster: #{db_name} is properly sorted. No action was needed."
